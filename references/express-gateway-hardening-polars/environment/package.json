@@ -1,0 +1,17 @@
+{
+  "name": "express-security-audit-polars",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "security-audit": "./bin/security-audit.js"
+  },
+  "scripts": {
+    "start": "node ./bin/security-audit.js",
+    "serve": "node ./bin/security-audit.js --port 8080"
+  },
+  "dependencies": {
+    "express": "4.21.2",
+    "nodejs-polars": "0.25.1"
+  }
+}

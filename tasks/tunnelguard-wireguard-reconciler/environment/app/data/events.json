@@ -1,0 +1,6 @@
+{
+  "alice": [],
+  "bob": [{"kind":"rotated","old_key":"key-bob-old","new_key":"key-bob-new","at":"2026-06-15T00:00:00Z"}],
+  "carol": [],
+  "dave": [{"kind":"compromised","key":"key-dave","at":"2026-07-01T12:00:00Z"}]
+}

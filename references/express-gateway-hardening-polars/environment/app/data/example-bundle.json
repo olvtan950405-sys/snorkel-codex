@@ -1,0 +1,59 @@
+{
+  "bundle_id": "release-2026-06-15",
+  "audit_at": "2026-06-15T00:00:00.000Z",
+  "gateways": [
+    {
+      "gateway_id": "gw-east",
+      "services": [
+        {
+          "service_id": "orders",
+          "tls": {
+            "minimum_version": "TLSv1.2",
+            "mutual_tls": true,
+            "cipher_suites": ["TLS_AES_128_GCM_SHA256"]
+          },
+          "credentials": [
+            {
+              "credential_id": "orders-signing",
+              "key_type": "RSA",
+              "key_bits": 2048,
+              "secret_ref": "vault:orders/signing",
+              "inline": false
+            }
+          ],
+          "routes": [
+            {
+              "path": "/orders",
+              "methods": ["GET", "POST"],
+              "authentication": "oauth2"
+            }
+          ]
+        },
+        {
+          "service_id": "legacy-admin",
+          "tls": {
+            "minimum_version": "TLSv1.1",
+            "mutual_tls": false,
+            "cipher_suites": ["TLS_RSA_WITH_3DES_EDE_CBC_SHA", "TLS_AES_128_GCM_SHA256"]
+          },
+          "credentials": [
+            {
+              "credential_id": "legacy-signing",
+              "key_type": "RSA",
+              "key_bits": 1024,
+              "secret_ref": "inline:pem",
+              "inline": true
+            }
+          ],
+          "routes": [
+            {
+              "path": "/admin",
+              "methods": ["GET", "DELETE"],
+              "authentication": "none"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

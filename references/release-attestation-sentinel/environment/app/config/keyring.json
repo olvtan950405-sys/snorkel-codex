@@ -1,0 +1,20 @@
+{
+  "keys": [
+    {
+      "key_id": "k-build-2025b",
+      "public_key": "MCowBQYDK2VwAyEA4MzwWm+4loH4xf6xQcDV7txNwmr2HH3DBcf6r4kQA18="
+    },
+    {
+      "key_id": "k-build-2026a",
+      "public_key": "MCowBQYDK2VwAyEAXXUN4a0O2zEMn2mGIaDBBywq3uEdCYrIj5VT6SVQ6SQ="
+    },
+    {
+      "key_id": "k-ci-sandbox",
+      "public_key": "MCowBQYDK2VwAyEAPxjgqhrnQB53kxs4HuHKbxuIhCJco4gfJsWQbuFNueg="
+    },
+    {
+      "key_id": "k-legacy-2024",
+      "public_key": "MCowBQYDK2VwAyEAHg3xwK3BLNSUbO+4eZh5KvJoIPjFgbFqheOArEYPiFY="
+    }
+  ]
+}

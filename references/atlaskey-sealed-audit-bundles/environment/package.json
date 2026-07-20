@@ -1,0 +1,18 @@
+{
+  "name": "atlaskey-audit",
+  "version": "2.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "atlaskey-audit": "./bin/atlaskey-audit.js"
+  },
+  "scripts": {
+    "serve": "node ./bin/atlaskey-audit.js --port 8080",
+    "seed-catalog": "node ./tools/seed-catalog.mjs"
+  },
+  "dependencies": {
+    "@duckdb/node-api": "1.5.4-r.1",
+    "fastify": "5.10.0",
+    "nodejs-polars": "0.25.1"
+  }
+}

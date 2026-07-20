@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_HOME="${APP_HOME:-/app}"
+
+exec java -Djava.library.path="${APP_HOME}/build" -jar "${APP_HOME}/build/sentinel.jar" "$@"

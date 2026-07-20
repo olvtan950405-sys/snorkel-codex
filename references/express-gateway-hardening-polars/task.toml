@@ -1,0 +1,29 @@
+version = "2.0"
+
+[metadata]
+title = "Harden an Express Security Audit Endpoint with Polars"
+author_name = "omartini-dev"
+author_email = "omartini@webstacks.com"
+difficulty = "hard"
+category = "security"
+subcategories = ["api_integration", "tool_specific"]
+number_of_milestones = 0
+codebase_size = "minimal"
+languages = ["JavaScript"]
+tags = ["express", "hmac-sha256", "nodejs-polars", "mutual-tls", "cipher-suites", "secret-exposure", "route-authz"]
+forked_repo = ""
+expert_time_estimate_min = 180
+junior_time_estimate_min = 360
+
+[verifier]
+timeout_sec = 600.0
+
+[agent]
+timeout_sec = 1800.0
+
+[environment]
+allow_internet = false
+build_timeout_sec = 900.0
+cpus = 2
+memory_mb = 4096
+storage_mb = 10240

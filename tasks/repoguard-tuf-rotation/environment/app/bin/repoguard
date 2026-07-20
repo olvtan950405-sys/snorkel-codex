@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "${1:-}" != "reconcile" ]; then
+    echo "usage: repoguard reconcile" >&2
+    exit 64
+fi
+
+exec /app/target/repoguard

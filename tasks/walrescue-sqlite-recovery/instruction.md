@@ -1,0 +1,5 @@
+Our telemetry gateway lost power while SQLite was checkpointing, and the database copy in `/app/data/gateway.db` is older than the accompanying `/app/data/gateway.db-wal`. The `walrescue` utility under `/app` is supposed to recover the last transaction that is actually committed and intact, but its parser was left half-finished and it currently treats damaged and uncommitted frames as durable data.
+
+Repair `walrescue` so it can recover this database—and any other SQLite database/WAL pair with the same supported format—without invoking SQLite's own WAL recovery. The WAL header, rolling checksum, transaction boundary, salt, page-application, truncation, and corruption rules are specified in `/app/docs/recovery-contract.md`. The recovered database and canonical JSON report must match that contract exactly, including when the WAL has an uncommitted or corrupt tail.
+
+Keep the tool buildable from the Go sources in `/app` and runnable as `/app/bin/walrescue recover --db <path> --wal <path> --out <path> --report <path>`.

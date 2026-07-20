@@ -1,0 +1,27 @@
+{
+  "bundle_id": "snapshot-2026-06-15",
+  "audit_at": "2026-06-15T00:00:00.000Z",
+  "gateways": [
+    {
+      "gateway_id": "gw-edge",
+      "services": [
+        {
+          "service_id": "checkout",
+          "rate_limit": {"enabled": true, "requests_per_minute": 600},
+          "retry": {"max_attempts": 3},
+          "circuit_breaker": {"enabled": true},
+          "upstreams": [{"upstream_id": "payments", "timeout_ms": 2000}],
+          "routes": [{"path": "/checkout", "rate_limit_per_minute": 600}]
+        },
+        {
+          "service_id": "legacy-batch",
+          "rate_limit": {"enabled": false, "requests_per_minute": 1000},
+          "retry": {"max_attempts": 10},
+          "circuit_breaker": {"enabled": false},
+          "upstreams": [{"upstream_id": "db-primary", "timeout_ms": 0}],
+          "routes": [{"path": "/batch/run", "rate_limit_per_minute": 100000}]
+        }
+      ]
+    }
+  ]
+}

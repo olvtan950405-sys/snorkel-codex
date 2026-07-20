@@ -1,0 +1,9 @@
+.git
+.env
+target
+out
+tests
+solution
+*.zip
+__pycache__
+*.pyc

@@ -1,0 +1,11 @@
+{
+  "policy_version": "GATEWAY-SRE-2026-06",
+  "max_requests_per_minute": 6000,
+  "max_timeout_ms": 30000,
+  "max_retry_attempts": 3,
+  "require_circuit_breaker": true,
+  "exempt_route_paths": [
+    "/healthz",
+    "/metrics"
+  ]
+}
