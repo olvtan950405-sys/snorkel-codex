@@ -1,0 +1,8 @@
+lock-version 1
+model sentence-transformers/all-MiniLM-L6-v2
+<<<<<<< HEAD
+revision stale
+=======
+revision rebased
+>>>>>>> origin/main
+signature broken

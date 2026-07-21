@@ -1,0 +1,5 @@
+# Repair the model lock verification gate
+
+The Lua service in `/app` is our last check before a pinned Hugging Face model is promoted, but a conflicted rebase left `/app/verify_service.lua` and `/app/deps.lock` unusable. Repair the service so `POST /verify-lock` validates the selected lockfile according to `/app/docs/lock-verification.md`: reject unresolved conflict text and malformed locks, authenticate the lock with the configured maintainer key, resolve the locked revision against its model remote, materialize the Git LFS objects, and compare every locked artifact with what was actually fetched. Keep the service runnable as `/app/bin/lockguard --port <n>` and keep `/healthz` available.
+
+This gate handles untrusted lockfile content. Its calls to `git`, `git-lfs`, `openssl`, and `sha256sum` must not permit shell expansion or option injection, and a failed verification must not modify the source lockfile or model remote. The endpoint must work with the shipped files and with other valid lockfiles, keys, and local remotes selected through the documented environment variables; do not special-case the example model or its hashes.
