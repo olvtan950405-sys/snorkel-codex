@@ -1,0 +1,7 @@
+#!/usr/bin/env lua5.4
+package.path = "/app/?.lua;" .. package.path
+local service = require("release_attestor")
+local port
+for i = 1, #arg do if arg[i] == "--port" then port = tonumber(arg[i + 1]) end end
+if not port then io.stderr:write("usage: model-attestor --port <n>\n"); os.exit(2) end
+service.serve(port)

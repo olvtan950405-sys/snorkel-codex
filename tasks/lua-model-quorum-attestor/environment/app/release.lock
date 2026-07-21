@@ -1,0 +1,9 @@
+release-lock 1
+release hf-encoder-pack-2026-07
+quorum 2
+<<<<<<< HEAD
+model sentence-transformers/all-MiniLM-L6-v2 encoder v1 stale model.bin bad 1
+=======
+model intfloat/e5-small-v2 retrieval v1 rebased weights.bin bad 1
+>>>>>>> origin/release
+signer broken broken

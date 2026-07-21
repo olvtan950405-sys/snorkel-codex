@@ -1,0 +1,5 @@
+# Repair the model release attestation gate
+
+The Lua gate in `/app` is supposed to certify a release only when its model manifest has maintainer quorum and every pinned Hugging Face artifact is backed by the annotated release tag recorded in its local mirror. A bad rebase left `/app/release_attestor.lua` and `/app/release.lock` conflicted, and the old code confuses lightweight tags, Git LFS pointers, and downloaded artifacts. Repair `POST /attest-release` according to `/app/docs/release-attestation.md`, keeping `/app/bin/model-attestor --port <n>` and `/healthz` working.
+
+The manifest, signer ids, tag names, paths, and configured mirror root are untrusted. Calls to `git`, `git-lfs`, `openssl`, and `sha256sum` must treat them as inert operands rather than shell or command options. Verification must be read-only with respect to the manifest, keyring, and mirrors, must clean up its temporary clones after every result, and must derive the receipt from whichever valid manifest, maintainer keyring, and local mirrors are selected at startup—do not hard-code the shipped release.
