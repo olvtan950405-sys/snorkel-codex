@@ -1,0 +1,5 @@
+Our backup host has accumulated several PostgreSQL base backups and WAL archives across timeline switches, and the retention job can no longer be trusted. Repair `walkeeper` under `/app` so it can identify which backups are actually recoverable, choose the newest safe recovery target, and plan retention without deleting anything that the chosen restore or the policy still needs.
+
+The inventories under `/app/data` describe base-backup checkpoints, WAL segment headers, timeline histories, and a fixed retention policy. The exact record formats, timeline rules, recoverability rules, target selection, retention protections, reason precedence, and canonical output schema are defined in `/app/docs/recovery-contract.md`. The current implementation produces plausible reports but mishandles forks, segment continuity, partial segments, and ancestor retention.
+
+Make `/app/bin/walkeeper` produce the contract-correct `/app/out/recovery-plan.json` for the shipped inventory and for any other inventory supplied through its documented flags. Keep the solution data-driven and deterministic; the verifier will create inventories that do not exist in the image.

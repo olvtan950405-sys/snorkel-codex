@@ -1,0 +1,3 @@
+#!/usr/bin/env python3
+from walkeeper.cli import main
+raise SystemExit(main())
