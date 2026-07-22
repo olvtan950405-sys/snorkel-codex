@@ -1,0 +1,5 @@
+[
+  {"method":"POST","path":"/leases","body":{"ID":"lease-a","Subject":"alice","TTL":3600}},
+  {"method":"POST","path":"/rotate","body":{}},
+  {"method":"POST","path":"/leases","body":{"ID":"lease-b","Subject":"bob","TTL":7200}}
+]
