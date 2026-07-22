@@ -1,0 +1,7 @@
+{
+  "policyRemote": "/srv/policy-remotes/export-policy.git",
+  "policyRef": "main",
+  "policyCommit": "FOLLOW_BRANCH",
+  "policySubmodule": "vendor/policy-pack",
+  "auditDatabase": "/app/data/audit.duckdb"
+}

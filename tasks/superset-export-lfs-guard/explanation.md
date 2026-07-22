@@ -1,0 +1,21 @@
+# Task Explanation — Harden a Superset Export Worker with Git LFS Pinning
+
+_Category: Security. Reviewer-facing; the agent sees the concise instruction and `/app/docs/contracts.md`._
+
+## Difficulty Explanation
+
+The export worker is the final authorization gate between an Apache Superset export and downstream publication. Its initial implementation appears functional because it parses the request and returns a plausible approval, but it never establishes which policy revision was trusted, never consults the audit catalog, and treats attacker-supplied thumbnail hashes as evidence. Repair therefore spans three independent trust boundaries: Git must resolve an exact release tag and prove that the application source pins the same commit as a submodule gitlink; DuckDB must supply the latest authorization decision for the requesting actor and dashboard; and Git LFS must bind each exported thumbnail first to a committed pointer and then to the bytes fetched from the remote.
+
+The stages deliberately compound. A worker can resolve the correct tag yet remain vulnerable if it follows the checked-out submodule worktree rather than the `HEAD` gitlink. It can validate pointer metadata yet accidentally hash pointer text because LFS smudging was disabled. It can perform every cryptographic comparison correctly while still permitting shell or option injection through a remote path. Finally, all failure paths must collapse into stable, deduplicated reason codes without mutating any trusted input. Solving the task requires coordinating repository plumbing, strict untrusted-data validation, parameterized SQL, content-addressed storage, temporary-state cleanup, and byte-canonical CLI output.
+
+## Solution Explanation
+
+The reference repair first parses the export with an exact schema and validates IDs, paths, OIDs, sizes, and uniqueness before invoking external tools. It accepts only a fully qualified semantic-version tag, queries that one tag from the configured remote, peels an annotated tag when necessary, and compares the resulting commit with both `policyCommit` and the mode-`160000` gitlink recorded in the source repository's `HEAD` tree. No checked-out branch or mutable worktree state participates in the decision.
+
+After the supply-chain pin is established, the worker opens the selected DuckDB file and uses a parameterized query to retrieve the newest decision for the dashboard and actor. It clones the policy remote without initially smudging LFS objects, reads and validates `policy.json` from the exact commit, and checks the chart allowlist. Each committed thumbnail is then parsed as a canonical LFS v1 pointer whose SHA-256 OID and size must match the export. Only after those bindings succeed does the worker fetch LFS content and independently hash and size the materialized files. Git is invoked with argument arrays and option boundaries, all checkout state lives in a fresh temporary directory, and cleanup occurs for accepted and rejected runs. The final result is serialized as one compact deterministic JSON line.
+
+## Verification Explanation
+
+The verifier is black-box and drives only `/app/bin/export-guard`. Its primary fixture creates a fresh policy repository, annotated semantic-version tag, bare local remote, source repository with a pinned gitlink, Git LFS thumbnail, DuckDB audit catalog, and matching Superset export. Commit IDs, temporary paths, LFS OIDs, sizes, and database files therefore differ from the bundled example, preventing a fixture-specific implementation from passing.
+
+Focused cases replace the release tag with a mutable branch, mismatch the configured pin, append a newer audit denial, request a chart absent from policy, alter the exported OID or size, and inject path traversal. A remote whose filename contains shell metacharacters verifies that the value remains one inert operand and creates no side-effect file. The suite also hashes the export, configuration, and DuckDB database before and after approval to enforce read-only behavior, compares successful output byte-for-byte with canonical JSON, and finally checks that the shipped branch-following configuration was repaired and works end to end. The seeded worker fails the trust, authorization, LFS, and configuration checks; the oracle is designed to satisfy them without relying on bundled constants.

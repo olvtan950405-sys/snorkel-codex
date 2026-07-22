@@ -1,0 +1,12 @@
+{
+  "name": "superset-export-lfs-guard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {"guard": "node --experimental-strip-types ./bin/export-guard.ts"},
+  "dependencies": {
+    "@duckdb/node-api": "1.5.4-r.1",
+    "fastify": "5.10.0",
+    "nodejs-polars": "0.25.1"
+  }
+}
