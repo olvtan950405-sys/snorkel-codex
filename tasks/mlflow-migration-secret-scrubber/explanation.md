@@ -1,0 +1,15 @@
+# Task Explanation — Debug Go MLflow API migration secret scrubber
+
+*Category: Security. Reviewer-facing; the agent receives only the concise instruction and the contract under `/app/docs`.*
+
+## Difficulty Explanation
+
+The gateway sits at a realistic but unusually subtle boundary: it must understand a small versioned slice of the MLflow Tracking REST API while safely normalizing a captured stream that mixes transport credentials, MLflow tag objects, arbitrary nested JSON, and presigned artifact URLs. The shipped implementation compiles and looks plausible, but its CLI argument handling is broken, endpoint classification uses a broad substring, JSON duplicate keys are silently collapsed, output is opened non-atomically, and the raw request is serialized wholesale. A patch that merely masks `Authorization` still leaks credentials through query maps, nested tag values, URL parameters, and rejection diagnostics. Exact route matching, rejection precedence, safe URI policy, deterministic encoding, strict recursive decoding, and transactional file replacement interact, so several individually plausible implementations remain insecure or fail edge cases.
+
+## Solution Explanation
+
+The oracle treats decoding and disclosure as separate trust stages. It token-decodes each JSON value so duplicate object keys are observable, validates the exact request envelope, normalizes the path portion and method, and performs table-driven endpoint classification. It then clones and recursively walks request data: fixed transport keys and secret-shaped body keys become the literal redaction marker, MLflow tag objects receive their domain-specific policy, and HTTP(S) URLs are parsed and rebuilt with sensitive query values masked and canonical ordering. URI safety is accumulated during the walk but reported only after higher-precedence path decisions. Rejections are freshly constructed minimal values rather than sanitized request copies. All records stream to a sibling temporary file, which is synced, closed, and renamed only after every input line succeeds.
+
+## Verification Explanation
+
+The verifier rebuilds the submitted Go sources, then drives the binary exclusively through its documented CLI. It covers all five exact routes plus close path and method failures; randomized bearer tokens, API keys, nested secrets, and MLflow tag values; canonical redaction of newly generated presigned URLs; unsafe URI schemes and userinfo; minimal rejection schemas and decision precedence; duplicate keys at both top level and nested depth; schema errors; atomic preservation of an existing destination; absent body/map defaults; mixed JSON scalar preservation; byte determinism; and the shipped legacy capture. Random secrets prevent fixture-specific substitution, while a Go parser pass ensures the submitted source remains valid rather than relying on a stale executable. The intentionally broken seed cannot invoke correctly and fails the suite; the oracle implements the general contract and satisfies every check.
