@@ -1,0 +1,5 @@
+event_id,created_at,merchant,amount_cents,token_kid,token_alg,token_signature
+r-100,2026-01-02T10:00:00Z,acme,4200,primary,HS256,legit-a
+r-101,2026-01-02T10:01:00Z,acme,9900,legacy,none,unsigned
+r-102,2026-01-02T10:02:00Z,bravo,7500,shared,HS256,replayed-sig
+r-103,2026-01-02T10:03:00Z,acme,8100,shared,HS256,replayed-sig

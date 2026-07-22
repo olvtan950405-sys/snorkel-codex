@@ -1,0 +1,21 @@
+{
+  "name": "refundguard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {"build": "tsc"},
+  "dependencies": {
+    "better-sqlite3": "11.8.1",
+    "csv-parse": "5.6.0",
+    "express": "4.21.2",
+    "jsonwebtoken": "9.0.2",
+    "lodash": "4.17.20"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "7.6.12",
+    "@types/express": "5.0.1",
+    "@types/jsonwebtoken": "9.0.9",
+    "@types/node": "22.13.10",
+    "typescript": "5.8.2"
+  }
+}
