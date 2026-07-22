@@ -227,7 +227,7 @@ def test_valid_multiplatform_layout_is_admitted(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("mutation", ["layer_bytes", "descriptor_size", "config_platform"])
-def test_oci_graph_corruption_is_a_global_failure(case: Case, mutation: str) -> None:
+def test_layout_graph_corruption_is_a_global_failure(case: Case, mutation: str) -> None:
     """Any broken content commitment or platform binding rejects the complete layout."""
     name = "linux-amd64"
     manifest = case.manifests[name]

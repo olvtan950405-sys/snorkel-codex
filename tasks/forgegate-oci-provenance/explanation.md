@@ -8,7 +8,7 @@
 
 ## Solution explanation
 
-The oracle validates the top-level schemas and all requested platform identities, resolves every descriptor through its digest and size, and refuses symlinks or malformed graphs before considering evidence. It strictly validates each provenance envelope, signs canonical payload bytes, counts distinct eligible Ed25519 keys against total and per-role requirements, then applies exact builder identity, literal source prefixes, the contract's glob semantics, commit/build-time rules and material trust. High and critical findings require waivers matching all identity, artifact, platform, source, commit and half-open time fields. It replaces the output tree and serializes platform verdicts and their aggregate evidence digest canonically.
+The reference implementation validates the top-level schemas and all requested platform identities, resolves every descriptor through its digest and size, and refuses symlinks or malformed graphs before considering evidence. It strictly validates each provenance envelope, signs canonical payload bytes, counts distinct eligible Ed25519 keys against total and per-role requirements, then applies exact builder identity, literal source prefixes, the contract's glob semantics, commit/build-time rules and material trust. High and critical findings require waivers matching all identity, artifact, platform, source, commit and half-open time fields. It replaces the output tree and serializes platform verdicts and their aggregate evidence digest canonically.
 
 ## Verification explanation
 

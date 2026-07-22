@@ -210,10 +210,17 @@ def test_rotation_requires_the_old_root_threshold(workspace):
     document["signatures"] = [item for item in document["signatures"] if item["keyid"].startswith("root-")]
     candidate.write_bytes(canonical(document))
     before = state_rows(state / "trust.db")
+    before_root = (state / "trusted-root.json").read_bytes()
     result = run_guard(repository, state, out)
     assert result.returncode == 2
-    assert "old_root_threshold" in result.stderr
+    assert result.stderr == "repoguard: old_root_threshold\n"
+    assert read_report(out) == {
+        "reason": "old_root_threshold",
+        "repository_status": "invalid",
+        "targets": [],
+    }
     assert state_rows(state / "trust.db") == before
+    assert (state / "trusted-root.json").read_bytes() == before_root
 
 
 def test_timestamp_commits_to_snapshot_length(workspace):
@@ -234,10 +241,17 @@ def test_rollback_is_rejected_without_advancing_any_role(workspace):
         connection.execute("UPDATE accepted SET version=version+20 WHERE role='snapshot'")
         connection.commit()
     before = state_rows(state / "trust.db")
+    before_root = (state / "trusted-root.json").read_bytes()
     result = run_guard(repository, state, out)
     assert result.returncode == 2
-    assert "rollback:snapshot" in result.stderr
+    assert result.stderr == "repoguard: rollback:snapshot\n"
+    assert read_report(out) == {
+        "reason": "rollback:snapshot",
+        "repository_status": "invalid",
+        "targets": [],
+    }
     assert state_rows(state / "trust.db") == before
+    assert (state / "trusted-root.json").read_bytes() == before_root
 
 
 def test_invalid_signature_does_not_advance_state(workspace):

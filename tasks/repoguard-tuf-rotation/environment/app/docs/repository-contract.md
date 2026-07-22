@@ -60,7 +60,19 @@ Validation is fail-closed in this order:
 
 On a global validation failure RepoGuard exits 2, writes only canonical `report.json` containing
 `{"reason":<stable_reason>,"repository_status":"invalid","targets":[]}`, and does not retain stale
-artifacts. Success exits 0.
+artifacts. It also writes exactly `repoguard: <stable_reason>` followed by one newline to stderr.
+Success exits 0.
+
+The following scored failures have fixed reason strings:
+
+| Failure | `<stable_reason>` |
+|---|---|
+| A one-version root rotation does not meet the trusted old root's signature threshold | `old_root_threshold` |
+| A metadata version is lower than its persisted version | `rollback:<role>` |
+
+`<role>` is the role name used by the `accepted` table. For example, a snapshot at version 12
+when `accepted('snapshot')` is 32 must produce `rollback:snapshot`; its stderr is therefore exactly
+`repoguard: rollback:snapshot\n`, and `report.json` carries `"reason":"rollback:snapshot"`.
 
 ## Delegation resolution
 
