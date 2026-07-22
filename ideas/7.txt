@@ -1,0 +1,11 @@
+Category: Security & Cryptography
+
+Sub-Category: API Integration, DB Interaction
+
+Idea: Fix PHP Webhook HMAC Verification with Lockfile Nonces
+
+Description: Authenticated deploy webhooks are accepted only when the HMAC covers the exact request, the submitted composer.lock dependency fingerprint matches policy, and the nonce has not been seen before. The provided PHP incident API currently authorizes replayed deployment callbacks after a production key-rollover because it mishandles timestamp windows, compares signatures unsafely, and records nonces outside a transaction. Fix the service endpoint so it verifies signatures against keys stored in the database, derives a stable dependency fingerprint from composer.lock content, and rejects tampered or replayed requests.
+
+Language: PHP, POSIX shell
+
+Additional Inspiration: A small PHP API using the built-in web server and PDO SQLite is provided with a broken /v1/deploy/authorize endpoint, incomplete lockfile fingerprinting, unsafe HMAC checks, and non-atomic nonce recording.

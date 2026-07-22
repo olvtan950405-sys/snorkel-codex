@@ -1,0 +1,11 @@
+Category: Security & Cryptography
+
+Sub-Category: Tool Specific
+
+Idea: Repair a Go OpenTelemetry Collector Attribute Scrubber
+
+Description: A captured OTLP fixture exported by the legacy tracing agent carries spans and log records whose attributes embed bearer tokens, database connection strings with inline passwords, presigned artifact URLs, and cloud access keys that the new Go collector processor must redact or drop before the batch is forwarded to the upstream sink. The provided Go scrubbing processor misclassifies several OpenTelemetry attribute keys, canonicalizes nested resource and scope attributes inconsistently, and leaks credentials into its normalized debug export. Fix the attribute matcher and redaction policy so the static verifier can prove that sensitive OTLP fields are recognized by key and value pattern, redacted deterministically, and never emitted in plaintext across spans, span events, and log bodies.
+
+Language: Go
+
+Additional Inspiration: A partially implemented Go OpenTelemetry Collector processor with broken attribute-key matching, incomplete value-pattern redaction rules, inconsistent handling of resource/scope/span attribute scopes, and a verifier scaffold containing AST checks plus a byte-exact golden comparison against an independent reimplementation of the redaction policy.

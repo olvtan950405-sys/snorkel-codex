@@ -1,0 +1,11 @@
+Category: Security & Cryptography
+
+Sub-Category: DB Interaction, API Integration
+
+Idea: Implement a Go JWT Audit Pipeline for Gin and bbolt
+
+Description: The Locksmith API fixture and its sample HTTP requests exercise JWT issuance, key rotation, and encrypted lease storage in a bbolt database. Write a Go-based command pipeline that starts the provided Gin API, discovers its runtime port and database file with lsof or strace, replays the fixture requests, verifies JWT signatures and key IDs, and reconciles the encrypted records through the bbolt API. Live access to proxy.golang.org and sum.golang.org is required to resolve Go module dependencies, and the pipeline must fetch and verify remote Git refs for the selected module tags before producing the final audit report.
+
+Language: Go, Bash
+
+Additional Inspiration: A Gin-based Locksmith API fixture is provided with endpoints for JWT issuance, JWKS publication, signing-key rotation, and encrypted lease writes to a bbolt database, along with sample HTTP requests and a JSON Schema for the expected audit report.

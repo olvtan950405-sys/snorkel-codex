@@ -1,0 +1,11 @@
+Category: Security & Cryptography
+
+Sub-Category: API Integration
+
+Idea: Harden Fastify OCI Trust Worker with Graphviz Snapshots
+
+Description: Triage a production release incident where the included Fastify admission API accepts a forged OCI container spec after its background verifier follows an unsigned remote tag. The JavaScript worker must fetch the cloud-hosted Hugging Face dataset `terminal-bench/oci-trust-incident-corpus`, validate signed Git tags and release artifact digests, enforce repository hooks, and render the trust decision graph with Graphviz. Verification compares deterministic CLI output snapshots from the worker and `dot -Tplain` against expected incident outcomes.
+
+Language: JavaScript, Bash
+
+Additional Inspiration: A Fastify release-admission API with a JavaScript background verifier that currently trusts mutable remote refs, skips signed tag checks, ignores missing Git hooks, and emits incomplete Graphviz evidence.

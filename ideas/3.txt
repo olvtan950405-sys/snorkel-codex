@@ -1,0 +1,11 @@
+Category: Security & Cryptography
+
+Sub-Category: Tool Specific, DB Interaction
+
+Idea: Harden Superset Export Worker with Git LFS Pinning
+
+Description: Harden the provided TypeScript background worker that approves Apache Superset dashboard exports after reading a large DuckDB audit-log corpus. The current default trusts mutable Git submodule branches and unverified Git LFS pointers for exported chart thumbnails, so the worker must fetch the remote policy-pack repository, inspect release tags, pin the submodule commit, and verify LFS SHA-256 OIDs before accepting an export. Successful runs emit deterministic approval and rejection summaries that match the supplied CLI output snapshots.
+
+Language: TypeScript, SQL
+
+Additional Inspiration: A pnpm TypeScript project containing a broken background worker, DuckDB access layer, Superset export parser, insecure default configuration, and failing snapshot tests for approval summaries.

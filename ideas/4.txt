@@ -1,0 +1,11 @@
+Category: Security & Cryptography
+
+Sub-Category: DB Interaction, API Integration
+
+Idea: Fix Express JWT Forgery with SQLite and OSV
+
+Description: Production refunds are being accepted with forged JWTs after a vulnerable dependency shipped in the payments API. The provided Express TypeScript service, package lockfile, and CSV ledger of refund events must be triaged by loading the ledger into SQLite, querying suspicious signing patterns, and checking the live OSV.dev vulnerability advisory feed for affected npm packages. The fix hardens JWT verification in the API and produces a TypeScript analysis script whose findings are validated by integration tests.
+
+Language:TypeScript, SQL
+
+Additional Inspiration: A TypeScript Express payments API with flawed JWT verification middleware, an npm lockfile, SQLite schema, CSV refund ledger, and integration test scaffold are provided.

@@ -1,0 +1,11 @@
+Category: Security & Cryptography
+
+Sub-Category: Tool Specific, API Integration
+
+Idea: Fix Gin FFprobe Attestation for Signed GraphML Topology
+
+Description: Without network access and with only the incident report's quoted digest table, the RelayCast audit pipeline must reproduce the signed topology attestation for a tampered relay network. The provided Go Gin API currently accepts malformed FFprobe records, canonicalizes packet metadata inconsistently, and fails to bind Ed25519 signatures to the GraphML edge paths. Repair the API and shell pipeline so local MPEG-TS fixtures are probed with FFprobe, verified against the signed network dataset, and emitted as a schema-valid provenance report matching the report's Merkle root.
+
+Language: Go, Bash
+
+Additional Inspiration: A Go Gin API with `/v1/probe` and `/v1/attest` endpoints, a Make-driven reproduction script, and intentional bugs in FFprobe record validation, signature binding, and deterministic canonicalization.

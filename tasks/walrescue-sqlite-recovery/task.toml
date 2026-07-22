@@ -1,7 +1,6 @@
 version = "2.0"
 
 [metadata]
-title = "Recover the Last Durable SQLite Snapshot from a Damaged WAL"
 author_name = "anonymous"
 author_email = "anonymous"
 difficulty = "hard"

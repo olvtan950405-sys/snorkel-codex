@@ -1,0 +1,11 @@
+Category: Security & Cryptography
+
+Sub-Category: Tool Specific
+
+Idea: Debug Go MLflow API Migration Secret Scrubber
+
+Description: A captured MLflow Tracking REST fixture from the legacy experiment recorder contains bearer tokens, presigned artifact URLs, and run tags that the new Go gateway must reject or redact before forwarding. The provided Go migration shim misclassifies several MLflow endpoints and leaks credentials in its normalized request log. Fix the parser and policy engine so the static verifier can prove that sensitive MLflow fields are recognized, redacted deterministically, and never emitted in plaintext.
+
+Language: Go
+
+Additional Inspiration: A partially implemented Go MLflow request sanitizer with broken endpoint matching, incomplete redaction rules, and a verifier scaffold containing AST checks.

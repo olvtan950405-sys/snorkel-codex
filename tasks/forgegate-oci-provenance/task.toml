@@ -1,7 +1,6 @@
 version = "2.0"
 
 [metadata]
-title = "Repair an Offline OCI Provenance Admission Gate"
 author_name = "anonymous"
 author_email = "anonymous"
 difficulty = "hard"
@@ -11,7 +10,6 @@ number_of_milestones = 0
 codebase_size = "minimal"
 languages = ["Ruby"]
 tags = ["oci-layout", "ed25519", "slsa-provenance", "supply-chain-security", "vulnerability-waivers"]
-forked_repo = ""
 expert_time_estimate_min = 240
 junior_time_estimate_min = 480
 

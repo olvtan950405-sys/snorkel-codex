@@ -1,0 +1,11 @@
+Category: Security & Cryptography
+
+Sub-Category: Tool Specific
+
+Idea: Repair a Lua Lockfile Verification Endpoint with POSIX Crypto Utilities
+
+Description: A repaired `/verify-lock` endpoint rejects tampered dependency lockfiles, unresolved rebase conflicts, and mismatched Hugging Face model artifacts before a deployment can proceed. The provided Lua service is broken after a conflicted rebase in `verify_service.lua` and `deps.lock`, and it must safely drive POSIX tools such as `git`, `git-lfs`, `openssl`, and `sha256sum` without shell injection. Verification requires fetching the remote Git refs and LFS objects for `sentence-transformers/all-MiniLM-L6-v2` from Hugging Face and comparing them against the signed lockfile entries.
+
+Language: Lua, POSIX shell
+
+Additional Inspiration: A broken Lua HTTP verification service with conflicted rebase markers in the endpoint handler, a partially duplicated lockfile parser, an unsafe shell-command helper, maintainer public keys, and a property-style Busted test suite.
