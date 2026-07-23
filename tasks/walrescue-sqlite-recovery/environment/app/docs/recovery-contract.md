@@ -2,6 +2,8 @@
 
 `walrescue recover` reconstructs a standalone SQLite database from a checkpointed database file and its WAL. It parses the WAL itself; spawning `sqlite3`, opening the pair through a SQLite library, or copying/renaming the WAL beside the output is not recovery under this contract.
 
+The command accepts exactly one subcommand, `recover`, and exactly four path flags: `--db`, `--wal`, `--out`, and `--report`. Missing flags, unknown flags, or trailing positional arguments are fatal. Output and report paths must be distinct from each other and from both input paths after absolute path cleanup. If an output or report path already exists as a symbolic link, fail closed before reading or deleting anything. These path-safety failures must not modify either input and must not leave a new output database or report.
+
 ## Supported inputs
 
 The base file is an ordinary SQLite 3 database. Its 16-byte magic must be `SQLite format 3\0`. WAL files use SQLite WAL format version `3007000`, a page size from 512 through 65536 that is a power of two, and magic `0x377f0682` or `0x377f0683`. In the WAL header, a page-size field of `1` means 65536. Integers other than checksum words are big-endian.
@@ -11,7 +13,7 @@ The two magic values select the byte order in which checksum input words are rea
 - `0x377f0682`: little-endian checksum words
 - `0x377f0683`: big-endian checksum words
 
-The base database page size in bytes 16–17 (`1` means 65536) must equal the WAL page size. A base file whose length is not an exact number of pages is invalid.
+The base database page size in bytes 16–17 (`1` means 65536) must equal the WAL page size. A base file whose length is not an exact number of pages is invalid. A WAL page-size field of `1` is also the 65536-byte sentinel.
 
 ## Rolling checksum
 
@@ -41,7 +43,7 @@ The frame-header fields are:
 
 Every valid frame must repeat both salts from the WAL header and have a nonzero page number. A zero database-size field means the transaction continues. A nonzero database-size field commits every valid frame since the preceding commit, including the commit frame. That size must be nonzero, must not be smaller than the commit frame's page number, and no frame in that transaction may address a page beyond it.
 
-Frames from incomplete transactions are never applied. When a later transaction writes a page already written by an earlier committed transaction, the later committed image wins. A commit database size may shrink the database; pages at larger numbers are discarded even if an earlier transaction committed them.
+Frames from incomplete transactions are never applied. When a later valid frame writes a page already written by an earlier valid frame in the same committed transaction, the later frame is the trusted page image. When a later transaction writes a page already written by an earlier committed transaction, the later committed image wins. A commit database size may shrink the database; pages at larger numbers are discarded even if an earlier transaction committed them.
 
 ## Stopping rules
 
@@ -63,9 +65,11 @@ For example, if 12 frames are fully valid, frame 13 is complete but its commit s
 
 Start from the bytes of the base database. Apply committed frames in transaction order at `(page_number - 1) * page_size`, extending with zero-filled pages when necessary. After each commit, resize the working database to exactly the committed database size. The final file is therefore exactly `database_pages * page_size` bytes.
 
-The recovered database must be standalone. Clear the WAL-mode remnants in page 1 by setting bytes 18 and 19 (the file read/write versions) to `1`. Do not change any other byte unless supplied by a committed page image or removed by commit-time truncation.
+The recovered database must be standalone. If page 1 appears in a committed WAL transaction, apply that trusted page image first. Then clear the WAL-mode remnants in page 1 by setting bytes 18 and 19 (the file read/write versions) to `1`. Do not change any other byte unless supplied by a committed page image or removed by commit-time truncation.
 
 Write the database atomically: create a temporary file in the output directory, fsync it, rename it over the requested output, then fsync the directory. The input database and WAL must never be modified.
+
+If recovery fails after old output or report files already existed, remove those stale artifacts so a caller cannot accidentally treat them as the result of the failed evidence run.
 
 ## Canonical report
 

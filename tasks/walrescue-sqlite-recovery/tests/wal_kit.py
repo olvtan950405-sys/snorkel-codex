@@ -57,7 +57,8 @@ def build_wal(
     uncommitted: bytes | None = None,
 ) -> WalBuild:
     magic = 0x377F0682 if endian == "little" else 0x377F0683
-    header_first = struct.pack(">IIIIII", magic, 3007000, page_size, 0, salt1, salt2)
+    header_page_size = 1 if page_size == 65536 else page_size
+    header_first = struct.pack(">IIIIII", magic, 3007000, header_page_size, 0, salt1, salt2)
     h0, h1 = checksum(header_first, endian=endian)
     out = bytearray(header_first + struct.pack(">II", h0, h1))
     state = (h0, h1)
@@ -83,6 +84,36 @@ def build_wal(
             offsets.append(len(out))
             out += first + struct.pack(">IIII", salt1, salt2, *state) + page
     return WalBuild(out, offsets, committed, len(snapshots), len(snapshots[-1]) // page_size)
+
+
+def build_manual_wal(
+    frames: list[tuple[int, int, bytes]],
+    page_size: int,
+    endian: str,
+    salt1: int,
+    salt2: int,
+) -> WalBuild:
+    magic = 0x377F0682 if endian == "little" else 0x377F0683
+    header_page_size = 1 if page_size == 65536 else page_size
+    header_first = struct.pack(">IIIIII", magic, 3007000, header_page_size, 0, salt1, salt2)
+    h0, h1 = checksum(header_first, endian=endian)
+    out = bytearray(header_first + struct.pack(">II", h0, h1))
+    state = (h0, h1)
+    offsets = []
+    committed = 0
+    transactions = 0
+    database_pages = 0
+    for page_number, commit_size, page in frames:
+        assert len(page) == page_size
+        first = struct.pack(">II", page_number, commit_size)
+        state = checksum(first + page, state, endian)
+        offsets.append(len(out))
+        out += first + struct.pack(">IIII", salt1, salt2, *state) + page
+        if commit_size:
+            committed = len(offsets)
+            transactions += 1
+            database_pages = commit_size
+    return WalBuild(out, offsets, committed, transactions, database_pages)
 
 
 def snapshot(path: Path) -> bytes:
@@ -155,24 +186,40 @@ def standalone(blob: bytes) -> bytes:
     return bytes(result)
 
 
-def run_tool(root: Path, db: bytes, wal: bytes):
+def run_tool(root: Path, db: bytes, wal: bytes, extra_args: list[str] | None = None):
     db_path = root / "input.db"
     wal_path = root / "input.db-wal"
     out_path = root / "recovered.db"
     report_path = root / "report.json"
     db_path.write_bytes(db)
     wal_path.write_bytes(wal)
+    result = run_tool_paths(root, db_path, wal_path, out_path, report_path, extra_args)
+    return result, out_path, report_path
+
+
+def run_tool_paths(
+    root: Path,
+    db_path: Path,
+    wal_path: Path,
+    out_path: Path,
+    report_path: Path,
+    extra_args: list[str] | None = None,
+):
+    args = [
+        os.environ.get("WALRESCUE_BIN", "/app/bin/walrescue"),
+        "recover", "--db", str(db_path), "--wal", str(wal_path),
+        "--out", str(out_path), "--report", str(report_path),
+    ]
+    if extra_args:
+        args += extra_args
     result = subprocess.run(
-        [
-            os.environ.get("WALRESCUE_BIN", "/app/bin/walrescue"),
-            "recover", "--db", str(db_path), "--wal", str(wal_path),
-            "--out", str(out_path), "--report", str(report_path),
-        ],
+        args,
+        cwd=root,
         capture_output=True,
         text=True,
         timeout=60,
     )
-    return result, out_path, report_path
+    return result
 
 
 def assert_database(blob_path: Path, expected_blob: bytes):

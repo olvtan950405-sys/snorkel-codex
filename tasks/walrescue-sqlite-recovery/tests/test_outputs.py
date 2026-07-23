@@ -8,12 +8,15 @@ import pytest
 
 from wal_kit import (
     assert_database,
+    build_manual_wal,
     build_wal,
+    changed,
     checksum,
     expected_report,
     load_report,
     make_database_history,
     run_tool,
+    run_tool_paths,
     standalone,
 )
 
@@ -179,3 +182,118 @@ def test_inputs_are_unchanged_and_paths_are_independent(tmp_path):
     assert (tmp_path / "input.db").read_bytes() == base
     assert (tmp_path / "input.db-wal").read_bytes() == original_wal
     assert_database(output, second)
+
+
+def test_duplicate_page_inside_one_transaction_uses_last_frame(tmp_path):
+    """Within a committed transaction, a later frame for the same page is the trusted image."""
+    rng = random.Random(secrets.randbits(64))
+    base, first, _, _ = make_database_history(tmp_path, rng)
+    delta = changed(base, first, 1024)
+    page_number, final_page = delta[0]
+    stale_page = base[(page_number - 1) * 1024 : page_number * 1024]
+    frames = [(page_number, 0, stale_page), (page_number, 0, final_page)]
+    frames.extend((number, 0, page) for number, page in delta[1:-1])
+    last_number, last_page = delta[-1]
+    frames.append((last_number, len(first) // 1024, last_page))
+    build = build_manual_wal(frames, 1024, "little", rng.getrandbits(32), rng.getrandbits(32))
+    result, output, report = run_tool(tmp_path, base, build.blob)
+    assert result.returncode == 0, result.stderr
+    assert_database(output, first)
+    assert load_report(report) == expected_report(build, 1024, standalone(first))
+
+
+def test_committed_page_one_wins_but_wal_mode_bytes_are_cleared(tmp_path):
+    """A trusted page-1 image is preserved except for the two standalone DB version bytes."""
+    rng = random.Random(secrets.randbits(64))
+    base, first, _, _ = make_database_history(tmp_path, rng)
+    frame = first[:1024]
+    build = build_manual_wal(
+        [(1, len(base) // 1024, frame)],
+        1024,
+        "big",
+        rng.getrandbits(32),
+        rng.getrandbits(32),
+    )
+    result, output, report = run_tool(tmp_path, base, build.blob)
+    assert result.returncode == 0, result.stderr
+    expected = bytearray(base)
+    expected[:1024] = frame
+    expected[18:20] = b"\x01\x01"
+    assert output.read_bytes() == bytes(expected)
+    assert load_report(report) == expected_report(build, 1024, bytes(expected))
+
+
+def test_supports_sqlite_65536_page_size_encoding(tmp_path):
+    """The SQLite/WAL page-size sentinel value 1 represents 65536-byte pages."""
+    rng = random.Random(secrets.randbits(64))
+    base, first, _, _ = make_database_history(tmp_path, rng, page_size=65536)
+    build = build_wal(base, [first], 65536, "little", rng.getrandbits(32), rng.getrandbits(32))
+    assert build.blob[8:12] == b"\x00\x00\x00\x01"
+    result, output, report = run_tool(tmp_path, base, build.blob)
+    assert result.returncode == 0, result.stderr
+    assert_database(output, first)
+    assert load_report(report) == expected_report(build, 65536, standalone(first))
+
+
+@pytest.mark.parametrize("fault", ["base_magic", "base_length"])
+def test_malformed_base_database_is_fatal_and_cleans_stale_artifacts(tmp_path, fault):
+    """Bad base evidence fails before output artifacts can survive from an earlier run."""
+    rng = random.Random(secrets.randbits(64))
+    base, first, _, _ = make_database_history(tmp_path, rng)
+    build = build_wal(base, [first], 1024, "little", rng.getrandbits(32), rng.getrandbits(32))
+    bad_base = bytearray(base)
+    if fault == "base_magic":
+        bad_base[:6] = b"notSQL"
+    else:
+        bad_base.append(0)
+    stale_out = tmp_path / "recovered.db"
+    stale_report = tmp_path / "report.json"
+    stale_out.write_bytes(b"stale")
+    stale_report.write_bytes(b"stale\n")
+    result, output, report = run_tool(tmp_path, bytes(bad_base), build.blob)
+    assert result.returncode != 0
+    assert output == stale_out and report == stale_report
+    assert not output.exists()
+    assert not report.exists()
+
+
+def test_output_and_report_paths_must_not_alias_evidence_or_each_other(tmp_path):
+    """The recovery gate refuses to overwrite inputs, collapse artifacts, or follow symlink outputs."""
+    rng = random.Random(secrets.randbits(64))
+    base, first, _, _ = make_database_history(tmp_path, rng)
+    build = build_wal(base, [first], 1024, "little", rng.getrandbits(32), rng.getrandbits(32))
+    db_path = tmp_path / "input.db"
+    wal_path = tmp_path / "input.db-wal"
+    report_path = tmp_path / "report.json"
+    db_path.write_bytes(base)
+    wal_path.write_bytes(build.blob)
+
+    result = run_tool_paths(tmp_path, db_path, wal_path, db_path, report_path)
+    assert result.returncode != 0
+    assert db_path.read_bytes() == base
+    assert not report_path.exists()
+
+    shared = tmp_path / "shared"
+    result = run_tool_paths(tmp_path, db_path, wal_path, shared, shared)
+    assert result.returncode != 0
+    assert not shared.exists()
+
+    symlink_out = tmp_path / "linked-output.db"
+    target = tmp_path / "target.db"
+    target.write_bytes(b"do-not-touch")
+    symlink_out.symlink_to(target)
+    result = run_tool_paths(tmp_path, db_path, wal_path, symlink_out, report_path)
+    assert result.returncode != 0
+    assert target.read_bytes() == b"do-not-touch"
+    assert not report_path.exists()
+
+
+def test_rejects_trailing_cli_arguments_without_artifacts(tmp_path):
+    """Unexpected positional arguments are rejected rather than ignored."""
+    rng = random.Random(secrets.randbits(64))
+    base, first, _, _ = make_database_history(tmp_path, rng)
+    build = build_wal(base, [first], 1024, "little", rng.getrandbits(32), rng.getrandbits(32))
+    result, output, report = run_tool(tmp_path, base, build.blob, extra_args=["unexpected"])
+    assert result.returncode != 0
+    assert not output.exists()
+    assert not report.exists()
