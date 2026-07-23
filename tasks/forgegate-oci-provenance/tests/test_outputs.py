@@ -226,6 +226,25 @@ def test_valid_multiplatform_layout_is_admitted(tmp_path: Path) -> None:
     assert_canonical_artifacts(generated, report)
 
 
+def test_mixed_platform_rejection_preserves_independent_verdicts(tmp_path: Path) -> None:
+    """One rejected platform rejects the image without hiding an admitted sibling."""
+    generated = Case(tmp_path, [{"os": "linux", "architecture": "arm64", "variant": "v8"},
+                                {"os": "linux", "architecture": "amd64"}])
+    finding = {"advisory": "CVE-2026-9001", "package": "openssl", "severity": "critical"}
+    generated.payloads["linux-amd64"]["vulnerabilities"] = [finding]
+    generated.resign("linux-amd64")
+    report = generated.run()
+    by_platform = {item["platform"]: item for item in report["platforms"]}
+    assert report["status"] == "rejected"
+    assert by_platform["linux-amd64"]["status"] == "rejected"
+    assert by_platform["linux-amd64"]["reasons"] == ["VULNERABILITY_UNWAIVED"]
+    assert by_platform["linux-arm64-v8"]["status"] == "admitted"
+    assert sorted(path.name for path in (generated.out / "admission").iterdir()) == [
+        "linux-amd64.json", "linux-arm64-v8.json"
+    ]
+    assert_canonical_artifacts(generated, report)
+
+
 @pytest.mark.parametrize("mutation", ["layer_bytes", "descriptor_size", "config_platform"])
 def test_layout_graph_corruption_is_a_global_failure(case: Case, mutation: str) -> None:
     """Any broken content commitment or platform binding rejects the complete layout."""
@@ -260,6 +279,16 @@ def test_subject_binding_and_policy_reasons_accumulate_in_precedence(case: Case)
     case.resign(name)
     report = case.run()
     assert report["platforms"][0]["reasons"] == ["SUBJECT_MISMATCH", "SOURCE_NOT_ALLOWED", "REF_NOT_ALLOWED"]
+
+
+def test_ref_glob_treats_non_star_characters_literally(case: Case) -> None:
+    """Only '*' is special in ref_glob; regex metacharacters are ordinary bytes."""
+    name = "linux-amd64"
+    case.policy["allowed_builders"][0]["ref_glob"] = "refs/tags/v4.*"
+    case.payloads[name]["ref"] = "refs/tags/v4x8"
+    case.resign(name)
+    verdict = case.run()["platforms"][0]
+    assert verdict["reasons"] == ["REF_NOT_ALLOWED"]
 
 
 def test_unlisted_builder_is_rejected_after_valid_signature_verification(case: Case) -> None:
