@@ -1,4 +1,4 @@
-# Rubric 1
+# Security Remediation Rubric
 Agent reads `/app/docs/access-policy-spec.md` before implementing the repair, +1
 Agent inspects the SQLite schema and representative rows before editing source, +1
 Agent runs the shipped tool against a local key-event service and inspects all four artifacts, +1

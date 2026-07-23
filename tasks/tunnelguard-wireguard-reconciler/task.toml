@@ -1,6 +1,7 @@
 version = "2.0"
 
 [metadata]
+title = "Close Authorization and Route-Hijacking Bypasses in a WireGuard Security Gate"
 author_name = "anonymous"
 author_email = "anonymous"
 difficulty = "hard"
@@ -9,7 +10,7 @@ subcategories = ["db_interaction", "api_integration", "tool_specific"]
 number_of_milestones = 0
 codebase_size = "minimal"
 languages = ["Rust", "Python"]
-tags = ["wireguard", "cidr", "nftables", "sqlite", "key-rotation", "network-policy"]
+tags = ["wireguard", "access-control", "route-hijacking", "key-revocation", "nftables", "zero-trust"]
 expert_time_estimate_min = 240
 junior_time_estimate_min = 480
 

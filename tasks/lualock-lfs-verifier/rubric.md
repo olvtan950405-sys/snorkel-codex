@@ -4,9 +4,10 @@ Agent removes the rebase conflicts in both /app/verify_service.lua and /app/deps
 Agent implements the complete strict lock grammar including canonical ordering, paths, hashes, sizes, and conflict detection, +3
 Agent verifies the detached RSA-SHA256 signature over the exact signed prefix using the configured maintainer public key, +3
 Agent establishes that the exact locked object is a commit reachable from a ref in the configured remote, +3
+Agent rejects a commit that exists in the remote object database but is unreachable from every published head and tag, +3
 Agent inspects the committed Git LFS pointer and validates its oid and size against the signed lock, +3
 Agent materializes the locked revision's LFS objects in a fresh temporary checkout, +3
-Agent independently verifies materialized artifact byte sizes and sha256sum digests and collects all failures, +3
+Agent independently verifies materialized artifact byte sizes and sha256sum digests after valid pointer checks, +3
 Agent safely treats untrusted subprocess values as single operands and prevents shell and option injection, +5
 Agent removes temporary worktrees and files after both successful and rejected verification, +2
 Agent emits the documented deterministic status codes and canonical JSON response schemas, +2

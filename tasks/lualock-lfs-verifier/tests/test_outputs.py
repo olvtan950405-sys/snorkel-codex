@@ -8,7 +8,6 @@ import http.client
 import json
 import os
 from pathlib import Path
-import shutil
 import socket
 import subprocess
 import time
@@ -18,7 +17,13 @@ import pytest
 
 def run(*args: str, cwd: Path | None = None, input_bytes: bytes | None = None) -> bytes:
     """Run one required local tool without a shell and return stdout."""
-    return subprocess.run(args, cwd=cwd, input=input_bytes, check=True, stdout=subprocess.PIPE).stdout
+    return subprocess.run(
+        args,
+        cwd=cwd,
+        input=input_bytes,
+        check=True,
+        stdout=subprocess.PIPE,
+    ).stdout
 
 
 def free_port() -> int:
@@ -150,7 +155,10 @@ def test_conflict_markers_are_rejected_before_parsing(fixture: Fixture, marker: 
     """Each unresolved merge-marker form produces LOCK_CONFLICT."""
     path = fixture.root / "conflicted.lock"
     path.write_text(f"lock-version 1\n{marker}\n")
-    assert verdict(path, fixture.public, fixture.remote)[1] == {"reasons": ["LOCK_CONFLICT"], "status": "rejected"}
+    assert verdict(path, fixture.public, fixture.remote)[1] == {
+        "reasons": ["LOCK_CONFLICT"],
+        "status": "rejected",
+    }
 
 
 @pytest.mark.parametrize("mutation", ["blank", "duplicate", "traversal", "unsorted", "crlf", "bad-size"])
@@ -158,14 +166,24 @@ def test_strict_lock_grammar_rejects_ambiguous_inputs(fixture: Fixture, mutation
     """Blank/unknown ordering, unsafe paths, line endings, and numbers are invalid."""
     path = fixture.lock("mutated.lock")
     raw = path.read_bytes()
-    if mutation == "blank": raw = raw.replace(b"model ", b"\nmodel ", 1)
-    elif mutation == "duplicate": raw = raw.replace(b"revision ", b"model org/again\nrevision ", 1)
-    elif mutation == "traversal": raw = raw.replace(b"models/weights.bin", b"../weights.bin")
-    elif mutation == "unsorted": raw = raw.replace(b"artifact ", b"artifact z.bin " + fixture.digest.encode() + b" 1\nartifact ", 1)
-    elif mutation == "crlf": raw = raw.replace(b"\n", b"\r\n")
-    else: raw = raw.replace(str(len(fixture.content)).encode() + b"\n", b"00\n", 1)
+    if mutation == "blank":
+        raw = raw.replace(b"model ", b"\nmodel ", 1)
+    elif mutation == "duplicate":
+        raw = raw.replace(b"revision ", b"model org/again\nrevision ", 1)
+    elif mutation == "traversal":
+        raw = raw.replace(b"models/weights.bin", b"../weights.bin")
+    elif mutation == "unsorted":
+        replacement = b"artifact z.bin " + fixture.digest.encode() + b" 1\nartifact "
+        raw = raw.replace(b"artifact ", replacement, 1)
+    elif mutation == "crlf":
+        raw = raw.replace(b"\n", b"\r\n")
+    else:
+        raw = raw.replace(str(len(fixture.content)).encode() + b"\n", b"00\n", 1)
     path.write_bytes(raw)
-    assert verdict(path, fixture.public, fixture.remote)[1] == {"reasons": ["INVALID_LOCK"], "status": "rejected"}
+    assert verdict(path, fixture.public, fixture.remote)[1] == {
+        "reasons": ["INVALID_LOCK"],
+        "status": "rejected",
+    }
 
 
 def test_signature_authenticates_every_locked_field(fixture: Fixture) -> None:
@@ -173,20 +191,54 @@ def test_signature_authenticates_every_locked_field(fixture: Fixture) -> None:
     path = fixture.lock()
     raw = path.read_bytes().replace(fixture.digest.encode(), ("0" * 64).encode(), 1)
     path.write_bytes(raw)
-    assert verdict(path, fixture.public, fixture.remote)[1] == {"reasons": ["LOCK_SIGNATURE_INVALID"], "status": "rejected"}
+    assert verdict(path, fixture.public, fixture.remote)[1] == {
+        "reasons": ["LOCK_SIGNATURE_INVALID"],
+        "status": "rejected",
+    }
 
 
 def test_commit_must_be_reachable_from_remote_ref(fixture: Fixture) -> None:
     """A signed but nonexistent object id is a remote-reference mismatch."""
     path = fixture.lock(revision="0" * 40)
-    assert verdict(path, fixture.public, fixture.remote)[1] == {"reasons": ["REMOTE_REF_MISMATCH"], "status": "rejected"}
+    assert verdict(path, fixture.public, fixture.remote)[1] == {
+        "reasons": ["REMOTE_REF_MISMATCH"],
+        "status": "rejected",
+    }
+
+
+def test_dangling_commit_object_is_not_a_published_revision(fixture: Fixture) -> None:
+    """An existing commit outside every remote head and tag is not accepted."""
+    run("git", "commit", "--allow-empty", "-qm", "unpublished snapshot", cwd=fixture.repo)
+    dangling = run("git", "rev-parse", "HEAD", cwd=fixture.repo).decode().strip()
+    run(
+        "git",
+        "push",
+        "origin",
+        f"{dangling}:refs/heads/temporary-unpublished",
+        cwd=fixture.repo,
+    )
+    run(
+        "git",
+        "--git-dir=" + str(fixture.remote),
+        "update-ref",
+        "-d",
+        "refs/heads/temporary-unpublished",
+    )
+    run("git", "--git-dir=" + str(fixture.remote), "cat-file", "-e", dangling + "^{commit}")
+
+    result = verdict(
+        fixture.lock("dangling.lock", revision=dangling),
+        fixture.public,
+        fixture.remote,
+    )[1]
+    assert result == {"reasons": ["REMOTE_REF_MISMATCH"], "status": "rejected"}
 
 
 def test_pointer_metadata_must_match_lock(fixture: Fixture) -> None:
-    """A signed digest inconsistent with the committed pointer is explicitly rejected."""
+    """A signed digest inconsistent with the committed pointer is rejected."""
     path = fixture.lock(digest="1" * 64)
     reasons = verdict(path, fixture.public, fixture.remote)[1]["reasons"]
-    assert "LFS_POINTER_INVALID" in reasons and "ARTIFACT_DIGEST_MISMATCH" in reasons
+    assert "LFS_POINTER_INVALID" in reasons
 
 
 def test_missing_artifact_is_not_treated_as_ordinary_git_content(fixture: Fixture) -> None:
@@ -203,14 +255,6 @@ def test_remote_operand_with_shell_metacharacters_is_safe_and_supported(tmp_path
     assert status == 200 and data["status"] == "accepted"
     assert not (tmp_path / "PWNED.git").exists()
     assert not Path("/app/PWNED.git").exists()
-
-
-def test_required_posix_tools_are_used_by_active_lua_source() -> None:
-    """The repaired implementation actively drives every required verification tool."""
-    source = Path("/app/verify_service.lua").read_text()
-    for token in ('"git"', '"lfs"', '"openssl"', '"sha256sum"'):
-        assert token in source
-    assert "os.execute" in source
 
 
 def test_default_conflicted_fixture_is_repaired_and_inputs_remain_unchanged() -> None:

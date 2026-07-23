@@ -2,6 +2,10 @@
 
 All decisions use the RFC 3339 UTC instant `evaluate_at` in the selected policy file. Inputs are immutable evidence; tunnelguard may only replace the selected output directory.
 
+## Security objective
+
+This contract is the gateway's authorization boundary. A peer must never enter enforcement through alternate IP spelling, an expired grant, a denied service, compromised or inconsistent key evidence, an address collision, an unauthorized route, or a route overlapping an earlier admitted peer. Ambiguous or malformed security evidence fails closed according to the verdict precedence below. Audit output is evidence only; a rejected peer must be absent from both WireGuard and nftables configuration.
+
 ## Runtime configuration
 
 `/app/bin/tunnelguard` takes no command-line arguments. It reads these environment variables:
@@ -57,7 +61,9 @@ Parse addresses numerically. Convert IPv4-mapped IPv6 (`::ffff:a.b.c.d`) to IPv4
 
 A peer address is valid only when it is a usable member of its named pool and is not reserved. For IPv4, the network and broadcast addresses are unusable except that both addresses of a `/31` and the sole address of a `/32` are usable. Every IPv6 address in a pool is usable. If the configured address is invalid, allocate the numerically lowest usable, unreserved address not assigned to another enabled peer. If none exists, the peer is `quarantined`.
 
-For a peer that survives the key and access-policy verdicts, normalize and de-duplicate its routes. Every route must be wholly contained by one of the service CIDRs that peer may access. **If any configured route is not wholly contained by an effectively allowed service CIDR, that peer is `quarantined`; silently dropping the unauthorized route is not permitted.** Peers already rejected by an earlier key or access-policy verdict do not advertise routes, so their stored routes do not replace that earlier verdict. Two remaining active candidates may not advertise overlapping routes. Process candidates by `peer_id` byte order; the first keeps an overlapping route and each later peer becomes `route_conflict`. Identical networks overlap.
+Address conflicts are resolved before route containment is evaluated. After normalizing every enabled peer's configured address, process peers by `peer_id` byte order; the first peer keeps a duplicated normalized address and each later peer receives `address_conflict`. An `address_conflict` peer retains that verdict even if one of its stored routes would fail containment.
+
+For a peer that survives the key and access-policy verdicts and does not have an address conflict, normalize and de-duplicate its routes. Every route must be wholly contained by one of the service CIDRs that peer may access. **If any configured route is not wholly contained by an effectively allowed service CIDR, that peer is `quarantined`; silently dropping the unauthorized route is not permitted.** Peers already rejected by an earlier verdict do not advertise routes, so their stored routes do not replace that earlier verdict. Two remaining active candidates may not advertise overlapping routes. Process candidates by `peer_id` byte order; the first keeps an overlapping route and each later peer becomes `route_conflict`. Identical networks overlap.
 
 ## Access policy
 
@@ -75,12 +81,12 @@ A current public key is revoked if it was compromised at or before evaluation an
 
 Each enabled peer receives exactly one status; disabled peers are omitted. First applicable status wins:
 
-1. `quarantined`: malformed/unavailable event evidence, inconsistent key history, unknown pool, no allocatable address, unknown group/service reference, or invalid input.
+1. `quarantined`: malformed/unavailable event evidence, inconsistent key history, unknown pool, no allocatable address, unknown group/service reference, or invalid input other than route containment, which is evaluated after normalized `address_conflict` detection as described above.
 2. `key_revoked`: the effective current key is compromised.
 3. `rotate_key`: a valid latest rotation target is staged as `previous_key` but is not current.
 4. `access_expired`: the peer has emergency rows but none active and has no group-derived allowed services.
 5. `policy_denied`: it has no effective allowed services.
-6. `address_conflict`: its configured address duplicates another enabled peer's configured address after normalization. Process by `peer_id`; the first keeps it.
+6. `address_conflict`: its configured address duplicates another enabled peer's configured address after normalization. Process by `peer_id`; the first keeps it. This verdict is determined before route-containment validation and is not replaced by a route-based `quarantined` verdict.
 7. `route_conflict`: one of its normalized routes overlaps a route retained by an earlier active peer.
 8. `active`.
 
