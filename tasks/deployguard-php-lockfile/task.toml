@@ -1,0 +1,27 @@
+version = "2.0"
+
+[metadata]
+author_name = "anonymous"
+author_email = "anonymous"
+difficulty = "hard"
+category = "security"
+subcategories = ["api_integration", "db_interaction"]
+number_of_milestones = 0
+codebase_size = "minimal"
+languages = ["PHP", "SQL", "POSIX shell"]
+tags = ["webhook", "hmac-sha256", "composer-lock", "sqlite", "replay-protection"]
+expert_time_estimate_min = 120
+junior_time_estimate_min = 260
+
+[verifier]
+timeout_sec = 600.0
+
+[agent]
+timeout_sec = 1800.0
+
+[environment]
+allow_internet = false
+build_timeout_sec = 600.0
+cpus = 2
+memory_mb = 4096
+storage_mb = 10240
