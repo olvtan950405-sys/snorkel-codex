@@ -1,0 +1,3 @@
+{"seq":10,"method":"post","path":"/api/2.0/mlflow/runs/log-metric/","headers":{"Authorization":"Bearer demo-chain-secret","Accept":"application/json"},"body":{"run_id":"r-10","metric":{"key":"loss","value":0.25},"artifact":"https://objects.test/m?part=1&X-Amz-Signature=demo-signature"}}
+{"seq":12,"method":"POST","path":"/api/2.0/mlflow/runs/set-tag","body":{"key":"mlflow.user","value":"analyst@example.test"}}
+{"seq":15,"method":"GET","path":"/api/2.0/mlflow/runs/get?token=demo-query"}

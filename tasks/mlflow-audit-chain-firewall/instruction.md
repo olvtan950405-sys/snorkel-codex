@@ -1,0 +1,3 @@
+The migration audit sink at `/app` is intended to turn captured MLflow Tracking API requests into a safe, tamper-evident JSONL ledger, but its Go implementation currently forwards secrets and computes unusable chain values. Repair it so `/app/bin/mlflow-audit sanitize --input <jsonl> --output <jsonl> --seed <64-lowercase-hex>` implements the complete contract in `/app/docs/audit-contract.md`.
+
+Treat the output as a security artifact: implement the policy for arbitrary conforming streams, never disclose rejected request material, preserve the destination after any invalid input, and produce byte-identical canonical records and chain digests. Keep the solution in the provided Go module and rebuild `/app/bin/mlflow-audit` from source.
