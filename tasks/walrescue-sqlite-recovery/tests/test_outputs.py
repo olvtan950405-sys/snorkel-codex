@@ -3,7 +3,6 @@
 import random
 import secrets
 import struct
-from pathlib import Path
 
 import pytest
 

@@ -1,6 +1,5 @@
 """Build-time-only generator for the development database and WAL."""
 
-import random
 import sqlite3
 import struct
 from pathlib import Path

@@ -262,6 +262,49 @@ def test_subject_binding_and_policy_reasons_accumulate_in_precedence(case: Case)
     assert report["platforms"][0]["reasons"] == ["SUBJECT_MISMATCH", "SOURCE_NOT_ALLOWED", "REF_NOT_ALLOWED"]
 
 
+def test_unlisted_builder_is_rejected_after_valid_signature_verification(case: Case) -> None:
+    """A builder with valid keys still needs an exact policy allow-list entry."""
+    name = "linux-amd64"
+    payload = case.payloads[name]
+    payload["builder_id"] = "builder://trusted/experimental-v9"
+    for key in case.keyring["keys"]:
+        key["builder_id"] = payload["builder_id"]
+    case.resign(name)
+    verdict = case.run()["platforms"][0]
+    assert verdict["signers"] == ["build-a", "security-a"]
+    assert verdict["reasons"][0] == "BUILDER_NOT_ALLOWED"
+    assert "SIGNATURE_POLICY_UNMET" not in verdict["reasons"]
+
+
+def test_commit_identifier_must_be_lowercase_hex(case: Case) -> None:
+    """A signed payload with a non-contract commit is rejected for COMMIT_INVALID."""
+    name = "linux-amd64"
+    case.payloads[name]["commit"] = "ABCDEF" + "0" * 34
+    case.resign(name)
+    verdict = case.run()["platforms"][0]
+    assert verdict["reasons"] == ["COMMIT_INVALID"]
+
+
+def test_build_times_must_be_ordered_and_not_future(case: Case) -> None:
+    """A signed payload with an impossible build interval is rejected."""
+    name = "linux-amd64"
+    payload = case.payloads[name]
+    payload["build_started"] = "2026-06-14T10:06:00.000Z"
+    payload["build_finished"] = "2026-06-14T10:05:00.000Z"
+    case.resign(name)
+    verdict = case.run()["platforms"][0]
+    assert verdict["reasons"] == ["BUILD_TIME_INVALID"]
+
+
+def test_materials_must_use_trusted_prefixes(case: Case) -> None:
+    """A signed payload with an untrusted material URI is rejected."""
+    name = "linux-amd64"
+    case.payloads[name]["materials"][0]["uri"] = "https://downloads.example/release/payments"
+    case.resign(name)
+    verdict = case.run()["platforms"][0]
+    assert verdict["reasons"] == ["MATERIAL_NOT_TRUSTED"]
+
+
 def test_duplicate_signature_cannot_satisfy_distinct_role_quorum(case: Case) -> None:
     """Repeating one valid builder signature does not replace the required security signer."""
     name = "linux-amd64"

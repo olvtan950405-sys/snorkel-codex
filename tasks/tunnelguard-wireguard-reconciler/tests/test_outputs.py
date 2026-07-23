@@ -1,7 +1,6 @@
 """Black-box verification for tunnelguard policy reconciliation."""
 
 import hashlib
-import ipaddress
 import json
 import os
 import shutil
@@ -201,7 +200,15 @@ def test_future_compromise_has_no_effect(workspace):
 def test_inconsistent_rotation_history_quarantines(workspace):
     """Verify an unstaged latest rotation target is inconsistent evidence."""
     def mutate(_con, _policy, events):
-        events["alice"] = [{"kind":"rotated","old_key":"key-alice","new_key":"key-other","at":"2026-06-01T00:00:00Z"}]
+        events["alice"] = [
+            {
+                "kind": "rotated",
+                "old_key": "key-alice",
+                "new_key": "key-other",
+                "at": "2026-06-01T00:00:00Z",
+            }
+        ]
+
     report, _, _, _ = run_case(workspace, mutate)
     assert by_id(report)["alice"]["status"] == "quarantined"
 
@@ -213,7 +220,8 @@ def test_input_row_order_and_cidr_formatting_are_invariant(workspace):
     shutil.rmtree(out)
     con = sqlite3.connect(db)
     con.execute("update routes set cidr='10.80.10.7/25' where peer_id='alice'")
-    con.commit(); con.close()
+    con.commit()
+    con.close()
     events["bob"] = list(reversed(events["bob"]))
     second, raw2, _, _ = run_case(workspace)
     assert first == second and raw1 == raw2

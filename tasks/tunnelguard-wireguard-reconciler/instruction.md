@@ -2,7 +2,7 @@
 
 The edge gateway at `/app` was migrated to a zero-trust policy, but its `tunnelguard` reconciler was left half-finished. It still emits plausible WireGuard and nftables configuration even when peers have expired access, compromised keys, overlapping routes, or addresses that do not belong to their allocation pool.
 
-`tunnelguard` reads peers, address pools, reservations, and group membership from `/app/data/gateway.db`; policy from `/app/data/access-policy.yaml`; and key events from the HTTP service selected by `KEY_EVENT_API_BASE`. It must reconcile that state at the policy's fixed evaluation instant and write:
+`tunnelguard` reads peers, address pools, reservations, and group membership from `/app/data/gateway.db`; policy from `/app/data/access-policy.yaml`; and key events from the HTTP service selected by `KEY_EVENT_API_BASE`. The database, policy and output locations can also be selected through the environment-variable overrides defined in the contract. It must reconcile that state at the policy's fixed evaluation instant and write, by default:
 
 - `/app/out/wireguard/wg0.conf`
 - `/app/out/firewall/tunnelguard.nft`

@@ -1,15 +1,16 @@
 version = "2.0"
 
 [metadata]
+title = "Harden WAL Evidence Recovery Against Forged Crash Frames"
 author_name = "anonymous"
 author_email = "anonymous"
 difficulty = "hard"
-category = "data-processing"
-subcategories = ["db_interaction", "tool_specific"]
+category = "security"
+subcategories = ["db_interaction"]
 number_of_milestones = 0
 codebase_size = "minimal"
 languages = ["Go"]
-tags = ["sqlite", "write-ahead-log", "binary-parsing", "checksums", "crash-recovery", "forensics"]
+tags = ["incident-response", "forensics", "integrity-verification", "tamper-evidence", "sqlite-wal", "checksums"]
 expert_time_estimate_min = 240
 junior_time_estimate_min = 480
 

@@ -3,7 +3,7 @@ Agent reads `/app/docs/access-policy-spec.md` before implementing the repair, +1
 Agent inspects the SQLite schema and representative rows before editing source, +1
 Agent runs the shipped tool against a local key-event service and inspects all four artifacts, +1
 Agent parses IPv4 and IPv6 addresses and CIDRs numerically and normalizes masked network addresses, +3
-Agent converts IPv4-mapped IPv6 addresses before comparison and serialization, +2
+Agent converts IPv4-mapped IPv6 addresses before family and pool checks, reservation/allocation bookkeeping, duplicate detection and serialization, +2
 Agent implements usable-address semantics including IPv4 `/31` and `/32` boundaries, +2
 Agent deterministically allocates the lowest usable unreserved address not assigned to another enabled peer, +3
 Agent combines group policy so every deny overrides every allow regardless of membership order, +2
@@ -11,7 +11,7 @@ Agent applies emergency access with inclusive start and exclusive expiry and ign
 Agent queries key evidence exactly once per enabled peer and fails closed on unavailable or malformed evidence, +3
 Agent replays compromise and rotation events using the documented time and same-instant ordering, +3
 Agent distinguishes revoked, staged rotation, and inconsistent key histories according to the contract, +3
-Agent verifies each normalized route is contained by an effectively allowed service network, +2
+Agent quarantines an otherwise eligible peer when any normalized route is outside every effectively allowed service network, +2
 Agent detects numeric route overlap and gives the byte-sorted earlier active peer precedence, +3
 Agent applies the full verdict precedence without allowing lower-priority conflicts to mask evidence failures, +2
 Agent emits only active peers in WireGuard and nftables configuration at the exact required paths, +2

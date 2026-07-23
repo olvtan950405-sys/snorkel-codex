@@ -49,6 +49,16 @@ Scan complete frame slots in order. Stop before the first frame with a bad salt,
 
 Valid frames after the last commit form an uncommitted tail and are ignored. A malformed WAL header, unsupported format, mismatched page size, malformed base database, or a WAL with no valid commit is a fatal error: return nonzero and do not leave an output database or report behind.
 
+## Counter semantics
+
+The report counters are evidence counters, so update them only after the relevant condition is known.
+
+- `frames_scanned` counts complete frame slots examined. A trailing fragment shorter than `24 + page_size` bytes is not a complete slot and does not increment `frames_scanned`; it only sets `stop_reason` to `"partial_frame"`.
+- `valid_frames` counts frames that pass salt, page-number, checksum, and commit-size validation. If a complete frame has an invalid nonzero commit size, that frame increments `frames_scanned`, sets `stop_reason` to `"invalid_commit_size"`, and does not increment `valid_frames`.
+- Checksum-valid frames after the last commit increment `valid_frames`, but they do not increment `committed_frames` and are not applied to the output database.
+
+For example, if 12 frames are fully valid, frame 13 is complete but its commit size is invalid, and 5 bytes follow it, then `frames_scanned` is `13`, `valid_frames` is `12`, and `stop_reason` is `"invalid_commit_size"`. If 12 frames are fully valid and the file ends with only 5 bytes of a would-be frame, then `frames_scanned` is `12`, `valid_frames` is `12`, and `stop_reason` is `"partial_frame"`.
+
 ## Output database
 
 Start from the bytes of the base database. Apply committed frames in transaction order at `(page_number - 1) * page_size`, extending with zero-filled pages when necessary. After each commit, resize the working database to exactly the committed database size. The final file is therefore exactly `database_pages * page_size` bytes.

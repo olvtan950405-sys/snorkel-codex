@@ -1,6 +1,17 @@
 # tunnelguard access-policy contract
 
-All decisions use the RFC 3339 UTC instant `evaluate_at` in `/app/data/access-policy.yaml`. Inputs are immutable evidence; tunnelguard may only replace `/app/out`.
+All decisions use the RFC 3339 UTC instant `evaluate_at` in the selected policy file. Inputs are immutable evidence; tunnelguard may only replace the selected output directory.
+
+## Runtime configuration
+
+`/app/bin/tunnelguard` takes no command-line arguments. It reads these environment variables:
+
+- `TUNNELGUARD_DB`: SQLite inventory path; default `/app/data/gateway.db`.
+- `TUNNELGUARD_POLICY`: YAML policy path; default `/app/data/access-policy.yaml`.
+- `TUNNELGUARD_OUT`: output directory; default `/app/out`.
+- `KEY_EVENT_API_BASE`: required base URL for the key-event service, without a required trailing slash.
+
+Every output path named below is relative to the selected `TUNNELGUARD_OUT`. The program must honor all four settings together so an operator can reconcile an alternate snapshot without changing `/app/data` or `/app/out`.
 
 ## Inputs
 
@@ -42,11 +53,11 @@ Query exactly once for every enabled peer and never for a disabled peer. A non-2
 
 ## Address and CIDR rules
 
-Parse addresses numerically. Convert IPv4-mapped IPv6 (`::ffff:a.b.c.d`) to IPv4 before every comparison or serialization. Serialize addresses in compressed lowercase form and CIDRs at their masked network address.
+Parse addresses numerically. Convert IPv4-mapped IPv6 (`::ffff:a.b.c.d`) to IPv4 immediately after parsing and before every later operation, including address-family checks, pool membership, reservation lookup, allocation bookkeeping, duplicate/conflict detection and serialization. A mapped address such as `::ffff:10.70.0.2` is therefore an IPv4 address inside an IPv4 pool and conflicts with another peer configured as `10.70.0.2`; it must not be rejected merely because its input spelling is IPv6. Serialize addresses in compressed lowercase form and CIDRs at their masked network address.
 
 A peer address is valid only when it is a usable member of its named pool and is not reserved. For IPv4, the network and broadcast addresses are unusable except that both addresses of a `/31` and the sole address of a `/32` are usable. Every IPv6 address in a pool is usable. If the configured address is invalid, allocate the numerically lowest usable, unreserved address not assigned to another enabled peer. If none exists, the peer is `quarantined`.
 
-For a peer that survives the key and access-policy verdicts, normalize and de-duplicate its routes. Routes must be wholly contained by one of the service CIDRs that peer may access. Rejected peers do not advertise routes, so their stored routes do not replace their earlier verdict. Two active candidates may not advertise overlapping routes. Process candidates by `peer_id` byte order; the first keeps an overlapping route and each later peer becomes `route_conflict`. Identical networks overlap.
+For a peer that survives the key and access-policy verdicts, normalize and de-duplicate its routes. Every route must be wholly contained by one of the service CIDRs that peer may access. **If any configured route is not wholly contained by an effectively allowed service CIDR, that peer is `quarantined`; silently dropping the unauthorized route is not permitted.** Peers already rejected by an earlier key or access-policy verdict do not advertise routes, so their stored routes do not replace that earlier verdict. Two remaining active candidates may not advertise overlapping routes. Process candidates by `peer_id` byte order; the first keeps an overlapping route and each later peer becomes `route_conflict`. Identical networks overlap.
 
 ## Access policy
 
